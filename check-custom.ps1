@@ -173,6 +173,16 @@ Test-Rule -Name "الفهرس الجانبي معطَّل" -File "quartz.config.
     -Pattern '(?s)table-of-contents"\s*\n\s*enabled:\s*false' `
     -Why "يُرصَف خارج المتن فلا يبلغه التشفير، فينشر عناوين التكتيكات صريحةً"
 
+# ─── رقعة رصف mermaid: نداءٌ ثانٍ كان يُعيده هراءً ───────────────────────
+Test-Rule -Name "إضافة ofm تشير إلى النسخة المحلّية" -File "package.json" `
+    -Pattern '"@quartz-community/obsidian-flavored-markdown":\s*"file:\./plugins/obsidian-flavored-markdown"' `
+    -Why "بلا ذلك تُستعمل نسخة npm بلا رقعة، فتُعيد الصفحةُ المشفَّرة مخطّطاتها «Syntax error in text»"
+
+Test-Rule -Name "رقعة تخزين تعريف mermaid" `
+    -File "plugins/obsidian-flavored-markdown/dist/index.js" `
+    -Pattern 'n=mermaidSourceCache;for\(let r of e\)if\(!n\.has\(r\)\)' `
+    -Why "بها وحدها يصير الرصف عاطلًا عن الأثر — وعلّتها في PATCHES.md هناك"
+
 # ─── فحص ما بُني فعلًا، إن وُجد ───────────────────────────────────────────
 $built = Join-Path $Root "public/index.html"
 if (Test-Path $built) {
