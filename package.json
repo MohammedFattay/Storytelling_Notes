@@ -52,7 +52,7 @@
     "@quartz-community/cname": "^0.1.0",
     "@quartz-community/comments": "^0.1.0",
     "@quartz-community/content-index": "^0.1.0",
-    "@quartz-community/content-meta": "^0.1.0",
+    "@quartz-community/content-meta": "file:./plugins/content-meta",
     "@quartz-community/content-page": "^0.1.0",
     "@quartz-community/crawl-links": "^0.1.0",
     "@quartz-community/created-modified-date": "^0.1.0",

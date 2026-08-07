@@ -105,6 +105,38 @@ Test-Rule -Name "تعريف --graph-link" -File "quartz/styles/custom.scss" `
     -Pattern '--graph-link:\s*#' `
     -Why "الرقعة تقرؤه، فإن غاب عادت الوصلات إلى لون الخلفية"
 
+# ─── سطر بيانات الصفحة: نسخة الإضافة المرقَّعة ────────────────────────────
+# تفصيل الرقعات في plugins/content-meta/PATCHES.md. والنسخة هنا **مطابقة بايتًا
+# ببايت** لنظيرتها في D:\quartz-site، فالعطب واحد والحزمة واحدة. وأثره في هذا
+# الموقع صفحةٌ واحدة (الفهرس العلنيّ) لا أكثر، إذ المتنُ مشفَّر فلا نصّ يُقاس
+# منه وقتُ قراءة — ويبقى الإصلاح لازمًا فيها، ولئلّا يختلف الموقعان.
+Test-Rule -Name "إضافة content-meta تشير إلى النسخة المحلّية" -File "package.json" `
+    -Pattern '"@quartz-community/content-meta":\s*"file:\./plugins/content-meta"' `
+    -Why "بالعودة إلى نسخة npm يعود التداخل: «٠٧ أغسطس ٢٠٢٦دقيقتان للقراءة»"
+
+Test-Rule -Name "رقعة الأرقام اللاتينية في التاريخ" -File "plugins/content-meta/dist/index.js" `
+    -Pattern '\-u\-nu\-latn' `
+    -Why "بدونها يخرج التاريخ بأرقام هندية، ووقتُ القراءة بلاتينية حيث يكون رقمًا"
+
+Test-Rule -Name "رقعة الفاصل النصّيّ" -File "plugins/content-meta/dist/index.js" `
+    -Pattern 'segments\.flatMap' `
+    -Why "بدونها يعود الفاصل عنصرًا وهميًّا (::after) لا يُنسخ مع النصّ ولا يُقرأ آليًّا"
+
+Test-Rule -Name "رقعة عزل الاتّجاه" -File "plugins/content-meta/dist/index.js" `
+    -Pattern 'unicode-bidi: isolate' `
+    -Why "بدونها تتشابك صناديق التاريخ ووقت القراءة، ولا يمنع ذلك فاصلٌ ولا هامش"
+
+Test-Rule -Name "لا margin-right في سطر البيانات" -File "plugins/content-meta/dist/index.js" `
+    -Pattern 'margin-right' `
+    -Absent `
+    -Why "الهامش على الجهة المادّية يذهب في RTL إلى حافة الصفحة لا بين العنصرين"
+
+# وهذا الفحص على **الناتج** لا على الإعداد، فقد تبقى الرقعة في المصدر ولا تبلغ
+# البناء. والفهرس العلنيّ هو الصفحة الوحيدة التي يظهر فيها السطر هنا.
+Test-Rule -Name "الناتج المبنيّ: تاريخٌ لاتينيّ ثمّ فاصل" -File "public/index.html" `
+    -Pattern 'class="content-meta"><time[^>]*>[0-9]{2} \S+ [0-9]{4}</time>، <span>' `
+    -Why "فحصٌ على الناتج لا على الإعداد: يكشف رقعةً قائمةً في المصدر ولم تبلغ البناء"
+
 # ─── سلسلة الأدوات ────────────────────────────────────────────────────────
 Test-Rule -Name "moduleResolution: bundler" -File "tsconfig.json" `
     -Pattern '"moduleResolution":\s*"bundler"' `
