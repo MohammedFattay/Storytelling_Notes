@@ -196,6 +196,30 @@ if (Test-Path $built) {
             Why  = "الإعداد قد يكون سليمًا والناتج مكسورًا — هذا هو الفحص الوحيد على ما يراه الزائر"
         })
     }
+
+    # رقعة mermaid في الناتج لا في المصدر وحده. ويُفحَص المعنى لا الاسم: فـQuartz
+    # يعيد تصغير السكربت فيسمّي `mermaidSourceCache` حرفًا واحدًا (`x` في أوّل
+    # بناء). والمطلوب أن يكون بعد `code.mermaid` استعمالٌ لـ`.has(` — أي أنّ
+    # المخزَن لا يُكتب فوقه. وبلا هذا يُصلَح المصدر ويبقى الزائر على العطب.
+    $bundle = Get-ChildItem (Join-Path $Root "public/static") -Filter *.js -Recurse -ErrorAction SilentlyContinue |
+              Where-Object { (Get-Content $_.FullName -Raw -Encoding UTF8) -match 'code\.mermaid' } |
+              Select-Object -First 1
+    if (-not $bundle) {
+        if (-not $Quiet) { Write-Host "  · لا سكربت mermaid في الناتج — يُخطّى" -ForegroundColor DarkGray }
+    } else {
+        $js = Get-Content $bundle.FullName -Raw -Encoding UTF8
+        $i  = $js.IndexOf('code.mermaid')
+        $window = $js.Substring($i, [Math]::Min(420, $js.Length - $i))
+        if ($window -match '\.has\(') {
+            $Pass++
+            if (-not $Quiet) { Write-Host "  ✓ رقعة mermaid قائمة في الناتج المبنيّ" -ForegroundColor DarkGray }
+        } else {
+            [void]$Fails.Add([pscustomobject]@{
+                Name = "الناتج المبنيّ بلا رقعة mermaid"; File = $bundle.Name
+                Why  = "النداء الثاني سيخزّن نصّ الـSVG المرصوف ويعطيه mermaid — «Syntax error in text» ومصدرُ المخطّط سليم"
+            })
+        }
+    }
 } elseif (-not $Quiet) {
     Write-Host "  · public/ غير مبنيّ — تُخطّى فحوص الناتج" -ForegroundColor DarkGray
 }
