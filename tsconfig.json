@@ -1,0 +1,38 @@
+{
+  "compilerOptions": {
+    "lib": ["esnext", "DOM", "DOM.Iterable"],
+    "experimentalDecorators": true,
+    "module": "esnext",
+    "target": "esnext",
+    // "node" (=node10) مهجورة، وتتوقّف عن العمل في TypeScript 7. و"bundler"
+    // هي الصحيحة لهذا المشروع: حزمة ESM تُبنى بـ esbuild لا بـ tsc.
+    // وهي تحترم خرائط "exports" في package.json، ولهذا احتاجت الحزمتان
+    // أدناه تعيينًا صريحًا في paths — فخريطتاهما لا تُصدّران ما يستورده Quartz.
+    "moduleResolution": "bundler",
+    "paths": {
+      // تشحن الحزمة index.d.ts لكن خريطة exports لا تعلن عنه، فلا يجده المحلّل
+      "micromorph": ["./node_modules/micromorph/index.d.ts"],
+      // استيراد عميق لا تعلنه خريطة exports؛ والنوع المقصود هو Root من mdast
+      "remark-parse/lib": ["./node_modules/remark-parse/lib/index.d.ts"]
+    },
+    "strict": true,
+    "incremental": true,
+    "resolveJsonModule": true,
+    "skipLibCheck": true,
+    "allowSyntheticDefaultImports": true,
+    "forceConsistentCasingInFileNames": true,
+    "noUnusedLocals": true,
+    "noUnusedParameters": true,
+    "esModuleInterop": true,
+    "jsx": "react-jsx",
+    "jsxImportSource": "preact"
+  },
+  "include": ["quartz/**/*.ts", "quartz/**/*.tsx", "*.ts", "*.tsx", "./package.json"],
+  "exclude": [
+    "build/**/*.d.ts",
+    ".quartz/**/src/**",
+    ".quartz/**/test/**",
+    "node_modules/**",
+    "quartz/cli/tui/**"
+  ]
+}

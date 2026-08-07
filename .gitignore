@@ -1,0 +1,24 @@
+.DS_Store
+node_modules
+public
+
+# ── ما يفرّق هذا المستودع عن موقع إدارة المشاريع ──────────────────────
+# هناك تُثبَّت content/ ويبني GitHub منها. وهنا لا تُثبَّت أبدًا: مادّتها شرحٌ
+# لمنتج تجاري، وتثبيتها يجعل النصّ الخام مقروءًا في المستودع العام بلا كلمة
+# مرور — فيبطل التشفير كلّه. فيُبنى محليًّا، ويُدفع الناتج المشفَّر وحده إلى
+# فرع gh-pages. (تفصيله في README.md وفي CLAUDE.md قاعدة 15/ز)
+content/
+
+# كلمة مرور الصفحات: تُقرأ عند البناء وتُحقن في content/ المولَّدة، ولا تُثبَّت.
+.secrets/
+
+prof
+tsconfig.tsbuildinfo
+.obsidian
+.quartz-cache
+private/
+.replit
+replit.nix
+.quartz/
+quartz/cli/tui/dist/
+.turbo/

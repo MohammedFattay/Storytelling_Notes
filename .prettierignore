@@ -1,0 +1,8 @@
+public
+node_modules
+.quartz-cache
+
+# content/ نسخة مولَّدة من الفولت (انظر sync.ps1). وتنسيقها هنا عبث:
+# يعارض المصدر، وتمحوه أول مزامنة. مصدره Obsidian لا هذا المستودع.
+content
+.quartz
