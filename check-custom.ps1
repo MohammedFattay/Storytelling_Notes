@@ -137,6 +137,22 @@ Test-Rule -Name "الناتج المبنيّ: تاريخٌ لاتينيّ ثمّ
     -Pattern 'class="content-meta"><time[^>]*>[0-9]{2} \S+ [0-9]{4}</time>، <span>' `
     -Why "فحصٌ على الناتج لا على الإعداد: يكشف رقعةً قائمةً في المصدر ولم تبلغ البناء"
 
+# ─── الأرقام اللاتينية في التواريخ: ثلاث حزم أخرى ────────────────────────
+# نظام أرقام ar-SA هنديّ (٠١٢) وبقيّةُ أرقام الموقع لاتينية، فيلتقي النوعان في
+# الصفحة الواحدة. وقد أُصلح سطر بيانات الصفحة في content-meta أوّلًا، فبقيت
+# 158 صفحة و3751 تاريخًا بأرقام هندية في فهارس المجلدات وصفحات الوسوم —
+# لأنّ formatDate مضمَّنة في كلّ حزمة بالبناء، فلا يكفي إصلاح واحدة.
+# التفصيل في plugins/<الحزمة>/PATCHES.md.
+foreach ($pkg in @("folder-page", "tag-page", "og-image")) {
+    Test-Rule -Name "إضافة $pkg تشير إلى النسخة المحلّية" -File "package.json" `
+        -Pattern ('"@quartz-community/' + $pkg + '":\s*"file:\./plugins/' + $pkg + '"') `
+        -Why "بالعودة إلى نسخة npm تعود الأرقام الهندية إلى قوائم هذه الصفحات"
+
+    Test-Rule -Name "رقعة الأرقام اللاتينية في $pkg" -File "plugins/$pkg/dist/index.js" `
+        -Pattern '\-u\-nu\-latn' `
+        -Why "بدونها يخرج تاريخ هذه الصفحات هنديًّا وسائرُ أرقام الموقع لاتينيًّا"
+}
+
 # ─── سلسلة الأدوات ────────────────────────────────────────────────────────
 Test-Rule -Name "moduleResolution: bundler" -File "tsconfig.json" `
     -Pattern '"moduleResolution":\s*"bundler"' `
@@ -273,6 +289,24 @@ if (Test-Path $built) {
             })
         }
     }
+    # ولا رقم هنديّ في أيّ <time> من الناتج كلّه. وهذا فحصٌ شاملٌ لا على صفحةٍ
+    # نموذج، لأنّ العطب كان **موزّعًا**: أُصلح سطر بيانات الصفحة فبقيت 158 صفحة
+    # و3751 موضعًا في فهارس المجلدات وصفحات الوسوم. فيُفحَص الناتج كلّه.
+    $arabicDigits = [regex]'<time[^>]*>[^<]*[٠-٩]'
+    $offenders = 0
+    foreach ($h in Get-ChildItem -LiteralPath (Join-Path $Root "public") -Filter *.html -Recurse -File) {
+        if ($arabicDigits.IsMatch([IO.File]::ReadAllText($h.FullName))) { $offenders++ }
+    }
+    if ($offenders -eq 0) {
+        $Pass++
+        if (-not $Quiet) { Write-Host "  ✓ لا تاريخ بأرقام هندية في الناتج كلّه" -ForegroundColor DarkGray }
+    } else {
+        [void]$Fails.Add([pscustomobject]@{
+            Name = "تواريخ بأرقام هندية في $offenders صفحة"; File = "public/**/*.html"
+            Why  = "يلتقي في الصفحة نوعان من الأرقام، وهو أصل تداخل الصناديق في RTL — راجع plugins/*/PATCHES.md"
+        })
+    }
+
     # وهذا أهمّ فحوص الناتج في هذا الباب: أن تكون قواعدنا **خارج** كتلة
     # @layer. فالقاعدة الصحيحة داخل طبقة تُهزَم بلا ضجيج — تبني بنجاح وتخرج
     # مكسورة. واسم الملفّ فيه بصمة تتغيّر بكلّ بناء، فيُبحث بنمط لا باسم.
