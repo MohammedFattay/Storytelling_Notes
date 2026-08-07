@@ -215,6 +215,27 @@ Test-Rule -Name "رقعة تخزين تعريف mermaid" `
     -Pattern 'n=mermaidSourceCache;for\(let r of e\)if\(!n\.has\(r\)\)' `
     -Why "بها وحدها يصير الرصف عاطلًا عن الأثر — وعلّتها في PATCHES.md هناك"
 
+# ─── ما يعلو على طبقات الثيم ──────────────────────────────────────────────
+# تُعلن حزمة الثيم: @layer quartz-base, obsidian-theme, quartz-themes-base, …
+# فتنسيق Quartz في أدنى الطبقات وطبقاتُ الثيم بعده، والمتأخّرة تكسب مهما كانت
+# الأخرى أخصّ. فلا تنفع هنا حيلة ‎:root:root:root‎؛ والمخرج أنّ custom.scss
+# يُبنى **بلا طبقة**، وغير المصنَّف يكسب الطبقات كلَّها.
+Test-Rule -Name "استعادة تنسيق لوحة البحث" -File "quartz/styles/custom.scss" `
+    -Pattern '(?s)>\s*\.search-layout\s*\{[^}]{0,120}background:\s*var\(--light\)' `
+    -Why "بدونها يُصفِّر الثيم خلفية اللوحة وحدودها وحشو البطاقات، فتخرج النتائج نصًّا عاريًا فوق صفحة مضبَّبة"
+
+Test-Rule -Name "حشو بطاقات النتائج وفاصلها" -File "quartz/styles/custom.scss" `
+    -Pattern '(?s)\.result-card\s*\{[^}]{0,200}padding:\s*1em' `
+    -Why "بدونه تتلاصق عناوين النتائج بلا حشو ولا خطّ فاصل"
+
+Test-Rule -Name "محاذاة البطاقة start لا left" -File "quartz/styles/custom.scss" `
+    -Pattern 'text-align:\s*start' `
+    -Why "Quartz يضع left وهو خطأ في صفحة عربية؛ وسقوط هذا يعيد النتائج إلى محاذاة يسارية"
+
+Test-Rule -Name "إظهار أثر وضع القراءة" -File "quartz/styles/custom.scss" `
+    -Pattern '(?s):root\[reader-mode="on"\]\s*\{[^}]{0,400}opacity:\s*0' `
+    -Why "بدونها تُعيد قاعدةُ الثيم الشريطين كلّما كانت الفأرة خارج المتن — والزرّ في الشريط، فلا يُرى للضغط أثر"
+
 # ─── فحص ما بُني فعلًا، إن وُجد ───────────────────────────────────────────
 $built = Join-Path $Root "public/index.html"
 if (Test-Path $built) {
@@ -250,6 +271,37 @@ if (Test-Path $built) {
                 Name = "الناتج المبنيّ بلا رقعة mermaid"; File = $bundle.Name
                 Why  = "النداء الثاني سيخزّن نصّ الـSVG المرصوف ويعطيه mermaid — «Syntax error in text» ومصدرُ المخطّط سليم"
             })
+        }
+    }
+    # وهذا أهمّ فحوص الناتج في هذا الباب: أن تكون قواعدنا **خارج** كتلة
+    # @layer. فالقاعدة الصحيحة داخل طبقة تُهزَم بلا ضجيج — تبني بنجاح وتخرج
+    # مكسورة. واسم الملفّ فيه بصمة تتغيّر بكلّ بناء، فيُبحث بنمط لا باسم.
+    $idx = Get-ChildItem -LiteralPath (Join-Path $Root "public") -Filter "index-*.css" -File |
+           Select-Object -First 1
+    if ($idx) {
+        $css = Get-Content $idx.FullName -Raw -Encoding UTF8
+        # نهاية كتلة @layer quartz-base: تُحسب بموازنة الأقواس
+        $start = $css.IndexOf("{", $css.IndexOf("@layer"))
+        $depth = 0; $end = -1
+        for ($j = $start; $j -lt $css.Length; $j++) {
+            if ($css[$j] -eq "{") { $depth++ }
+            elseif ($css[$j] -eq "}") { $depth--; if ($depth -eq 0) { $end = $j; break } }
+        }
+        foreach ($probe in @(
+            @{ Key = "reader-mode=on"; Name = "قواعد وضع القراءة بلا طبقة" },
+            @{ Key = "search-layout{background"; Name = "قواعد لوحة البحث بلا طبقة" }
+        )) {
+            $at = $css.IndexOf($probe.Key)
+            if ($at -ge 0 -and ($end -lt 0 -or $at -gt $end)) {
+                $Pass++
+                if (-not $Quiet) { Write-Host ("  ✓ " + $probe.Name) -ForegroundColor DarkGray }
+            } else {
+                [void]$Fails.Add([pscustomobject]@{
+                    Name = $probe.Name; File = "public/" + $idx.Name
+                    Why  = if ($at -lt 0) { "القاعدة غائبة عن الناتج أصلًا" }
+                           else { "القاعدة داخل @layer، فتهزمها طبقات الثيم بلا ضجيج" }
+                })
+            }
         }
     }
 } elseif (-not $Quiet) {
