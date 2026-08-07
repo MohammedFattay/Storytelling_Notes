@@ -1,0 +1,1 @@
+@layer quartz-base{.content-meta{color:var(--darkgray);margin-top:0}.content-meta>*{unicode-bidi:isolate}.content-meta[show-comma=false]>:not(:last-child){margin-inline-end:.5em}}
