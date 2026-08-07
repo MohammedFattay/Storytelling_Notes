@@ -134,19 +134,44 @@ Test-Rule -Name "استثناء .quartz من Prettier" -File ".prettierignore" `
     -Pattern '(?m)^\.quartz\s*$' `
     -Why "مجلّد مولَّد — يُغرق فحص npm run check بشكاوى تنسيق لا تخصّنا"
 
-# ─── سيور العمل: ألّا تعود سيور Quartz الخاصّة بمستودعه ───────────────────
+# ─── سيور العمل: لا سير عمل واحد في هذا المستودع ─────────────────────────
+# ويفارق هذا نظيره في موقع إدارة المشاريع: هناك يُطلب سير عمل واحد (deploy.yaml)
+# يبني من content/ المثبَّتة. وهنا content/ غير مثبَّتة، فالسير الذي يبني ينتج
+# موقعًا فارغًا **ثم يحلّ به محلّ النشرة السليمة** — فشلٌ صامت: البناء ينجح
+# والموقع يخلو. فالمطلوب هنا صفر. (‎.github/NO-CI.md‎)
 $flows = @(Get-ChildItem (Join-Path $Root ".github/workflows") -Filter *.y*ml -ErrorAction SilentlyContinue |
            Select-Object -ExpandProperty Name | Sort-Object)
-if ($flows.Count -eq 1 -and $flows[0] -eq "deploy.yaml") {
+if ($flows.Count -eq 0) {
     $Pass++
-    if (-not $Quiet) { Write-Host "  ✓ سير عمل واحد فقط (deploy.yaml)" -ForegroundColor DarkGray }
+    if (-not $Quiet) { Write-Host "  ✓ لا سير عمل يبني (البناء محليّ)" -ForegroundColor DarkGray }
 } else {
     [void]$Fails.Add([pscustomobject]@{
-        Name = "سيور عمل زائدة: $($flows -join ', ')"
+        Name = "سيور عمل عادت: $($flows -join ', ')"
         File = ".github/workflows/"
-        Why  = "سيور Quartz الخاصّة بمستودعه (ci · docker · preview) تعود بالدمج، فتستهلك دقائق Actions وتفشل عندنا"
+        Why  = "لا content/ في هذا المستودع، فالسير الذي يبني يُنتج موقعًا فارغًا ويحلّ به محلّ النشرة المشفَّرة"
     })
 }
+
+# ─── وثلاثة تخصيصات هي محور هذا الموقع: حجب المادّة ──────────────────────
+Test-Rule -Name "المحتوى خارج المستودع" -File "sync.ps1" `
+    -Pattern '(?m)^\$Content\s*=\s*"D:\\quartz-storytelling-content"' `
+    -Why "لو عاد إلى content/ داخل المستودع لثبّته git سهوًا، فقُرئ النصّ الخام بلا كلمة مرور"
+
+Test-Rule -Name "البناء يشير إلى المحتوى الخارجي" -File "sync.ps1" `
+    -Pattern 'quartz build -d \$Content' `
+    -Why "بلا ‎-d‎ يبني Quartz من content/ الفارغ فيُخرج موقعًا بلا صفحات، وينجح"
+
+Test-Rule -Name "لا حرس .gitignore على content" -File ".gitignore" `
+    -Pattern '(?m)^content/\s*$' -Absent `
+    -Why "Quartz يحترم .gitignore عند جمع ملفّاته، فإدراج content/ يُخفيه عن البناء نفسه — مقيسٌ لا مُفترَض"
+
+Test-Rule -Name "إضافة التشفير مفعَّلة" -File "quartz.config.yaml" `
+    -Pattern '(?s)encrypted-pages"\s*\n\s*enabled:\s*true' `
+    -Why "بها وحدها يُشفَّر متن الصفحات — وتعطيلها ينشر المادّة صريحة"
+
+Test-Rule -Name "الفهرس الجانبي معطَّل" -File "quartz.config.yaml" `
+    -Pattern '(?s)table-of-contents"\s*\n\s*enabled:\s*false' `
+    -Why "يُرصَف خارج المتن فلا يبلغه التشفير، فينشر عناوين التكتيكات صريحةً"
 
 # ─── فحص ما بُني فعلًا، إن وُجد ───────────────────────────────────────────
 $built = Join-Path $Root "public/index.html"

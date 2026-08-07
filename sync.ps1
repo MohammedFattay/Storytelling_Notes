@@ -45,8 +45,14 @@ $Vault    = "D:\Obsidian_Vault"
 $Source   = Join-Path $Vault "Storytelling"
 $Attach   = Join-Path $Source "attachments"
 $Site     = "D:\quartz-storytelling"
-$Content  = Join-Path $Site "content"
 $Extra    = Join-Path $Site "site-files"
+
+# المحتوى **خارج** مجلد المستودع، وهذا فرقٌ جوهريّ عن موقع إدارة المشاريع.
+# وقد جُرِّب إبقاؤه في `content/` مع إدراجه في .gitignore، فانكسر البناء: Quartz
+# يحترم .gitignore عند جمع ملفّاته، فأعلن «Found 0 input files» وبنى موقعًا
+# فارغًا بلا خطأ — وهو أخطر أنواع الفشل. فصار الفصل مادّيًّا لا قاعديًّا: ما لا
+# يقع داخل المستودع لا يستطيع git أن يثبّته سهوًا، ولا يحتاج إلى قاعدة تحرسه.
+$Content  = "D:\quartz-storytelling-content"
 $Public   = Join-Path $Site "public"
 $Tools    = Join-Path $Site "tools"
 $Secret   = Join-Path $Site ".secrets\page-password.txt"
@@ -189,7 +195,7 @@ $ErrorActionPreference = "Continue"
 if ($Serve) {
     Write-Host "→ معاينة على http://localhost:8080 (Ctrl+C للإيقاف)" -ForegroundColor Cyan
     Write-Host "  الصفحات مشفَّرة هنا أيضًا — تُفتح بكلمة المرور نفسها" -ForegroundColor DarkGray
-    npx quartz build --serve
+    npx quartz build -d $Content --serve
     return
 }
 
@@ -213,8 +219,14 @@ if ($Push) {
 
     # يُبنى قبل الدفع عمدًا: فشل البناء محليًّا أرخص من نشرة مكسورة
     Write-Host "→ بناء الموقع..." -ForegroundColor Cyan
-    npx quartz build
+    npx quartz build -d $Content
     if ($LASTEXITCODE -ne 0) { throw "فشل البناء — لم يُدفع شيء" }
+
+    # لا يُنشر بناءٌ فارغ. والعلّة مقيسة: يوم كان المحتوى في `content/` مُدرَجًا
+    # في .gitignore، بنى Quartz صفرًا من الملفّات **وخرج بنجاح** — فكانت النشرة
+    # ستحلّ محلّ السليمة بلا أن يشتكي شيء.
+    $built = (Get-ChildItem -LiteralPath $Public -Recurse -Filter *.html -File | Measure-Object).Count
+    if ($built -lt 10) { throw "البناء أخرج $built صفحة فقط — بناءٌ فارغ لا يُنشر" }
 
     Write-Host "→ فحص التخصيصات..." -ForegroundColor Cyan
     & (Join-Path $Site "check-custom.ps1") -Quiet
