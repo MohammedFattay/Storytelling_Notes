@@ -153,6 +153,35 @@ foreach ($pkg in @("folder-page", "tag-page", "og-image")) {
         -Why "بدونها يخرج تاريخ هذه الصفحات هنديًّا وسائرُ أرقام الموقع لاتينيًّا"
 }
 
+# ─── البحث: نسخة الإضافة المرقَّعة ─────────────────────────────────────────
+# تفصيل الرقع في plugins/search/PATCHES.md. وأصلها أنّ `Mn` كانت تنتظر بناءَ
+# الفهرس (6.4MB مضغوطة) **قبل** أن تربط `wi()` مستمعي الزرّ — فكان الزرّ ميّتًا
+# 18.7s على شبكة كاملة و47.1s على 3G، بلا خطأ ولا مؤشّر انتظار.
+Test-Rule -Name "إضافة search تشير إلى النسخة المحلّية" -File "package.json" `
+    -Pattern '"@quartz-community/search":\s*"file:\./plugins/search"' `
+    -Why "بالعودة إلى نسخة npm يعود الزرّ ميّتًا حتى ينتهي الفهرس"
+
+Test-Rule -Name "رقعة ربط الواجهة قبل الفهرس" -File "plugins/search/dist/index.js" `
+    -Pattern 'async function Mn\(\)\{Ai\(\),await wi\(\)' `
+    -Why "بدونها تنتظر Mn الفهرسَ قبل ربط المستمعين، فلا يستجيب الزرّ لثوانٍ طويلة"
+
+Test-Rule -Name "رقعة إشعار تحميل الفهرس" -File "plugins/search/dist/index.js" `
+    -Pattern 'search-loading' `
+    -Why "بدونها تُخرج الكتابةُ قبل جهوز الفهرس «لا نتائج» — وهو خبرٌ كاذب لا انتظار"
+
+Test-Rule -Name "تعريب «لا نتائج»" -File "plugins/search/dist/index.js" `
+    -Pattern 'textContent="No results' `
+    -Absent `
+    -Why "المنطق لا يقرأ جدول i18n بل يكتب الإنجليزية حرفيًّا، فتعود إن سقطت الرقعة"
+
+Test-Rule -Name "تنسيق بطاقة التحميل" -File "quartz/styles/custom.scss" `
+    -Pattern 'result-card\.search-loading' `
+    -Why "بدونه تظهر بطاقة الإشعار بلا تمييز عن بطاقات النتائج"
+
+Test-Rule -Name "تثبيت خلفية الصفحة في وضع القراءة" -File "quartz/styles/custom.scss" `
+    -Pattern '(?s)#quartz-root\.page[^{]{0,80}\{[^}]{0,200}background-color:\s*var\(--lightgray\)\s*!important' `
+    -Why "الثيم يجعلها شفافة بانتقال يتبدّل مع كلّ دخول/خروج من شريط جانبيّ، فتُعاد رسم الصفحة وفيها لوحة WebGL — وهو «بياض الصفحة»"
+
 # ─── سلسلة الأدوات ────────────────────────────────────────────────────────
 Test-Rule -Name "moduleResolution: bundler" -File "tsconfig.json" `
     -Pattern '"moduleResolution":\s*"bundler"' `
@@ -249,7 +278,7 @@ Test-Rule -Name "محاذاة البطاقة start لا left" -File "quartz/styl
     -Why "Quartz يضع left وهو خطأ في صفحة عربية؛ وسقوط هذا يعيد النتائج إلى محاذاة يسارية"
 
 Test-Rule -Name "إظهار أثر وضع القراءة" -File "quartz/styles/custom.scss" `
-    -Pattern '(?s):root\[reader-mode="on"\]\s*\{[^}]{0,400}opacity:\s*0' `
+    -Pattern '(?s)\.sidebar\.left,\s*\.sidebar\.right\s*\{[^}]{0,160}opacity:\s*0\s*!important' `
     -Why "بدونها تُعيد قاعدةُ الثيم الشريطين كلّما كانت الفأرة خارج المتن — والزرّ في الشريط، فلا يُرى للضغط أثر"
 
 # ─── فحص ما بُني فعلًا، إن وُجد ───────────────────────────────────────────
